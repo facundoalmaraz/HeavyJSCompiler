@@ -12,7 +12,7 @@ const Home = () => {
   return (
     <div className="p-4">
       <h1 className="text-3xl text-white text-center justify-center font-bold flex items-center gap-3">
-        <span>HeavyJS: A Very Heavy Death Metal Compiler</span>
+        <span className=" font-['NorseBold-2Kge']">HeavyJS: A Very Heavy Death Metal Compiler</span>
         <img
           src="/logoheavyJS.png"
           alt=""
