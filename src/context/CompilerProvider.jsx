@@ -27,6 +27,7 @@ const CompilerProvider = ({ children }) => {
   const [codigoOptimizado, setCodigoOptimizado] = useState("");
   const [codigoMaquina, setCodigoMaquina] = useState("");
   const [codigoFinal, setCodigoFinal] = useState("");
+  const [ejecucion, setEjecucion] = useState("");
 
   //paso 1: Analizador Lexico
   function tokenizar(codigoFuente) {
@@ -569,6 +570,16 @@ const CompilerProvider = ({ children }) => {
     }
   }, [codigoMaquina]);
 
+
+useEffect(() => {
+setEjecucion(ejecutarCodigo(codigoFinal));
+
+}, [codigoFinal]);
+
+
+
+  
+
   return (
     <CompilerContext.Provider
       value={{
@@ -581,6 +592,7 @@ const CompilerProvider = ({ children }) => {
         codigoOptimizado,
         codigoMaquina,
         codigoFinal,
+        ejecucion,
       }}
     >
       {children}

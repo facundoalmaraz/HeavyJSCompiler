@@ -7,6 +7,7 @@ import CodigoIntermedio from "../components/CodigoIntermedio";
 import CodigoOptimizado from "../components/CodigoOptimizado";
 import CodigoMaquina from "../components/CodigoMaquina";
 import CodigoFinal from "../components/CodigoFinal";
+import CodigoEjecutado from "../components/CodigoEjecutado";
 
 const Home = () => {
   return (
@@ -27,8 +28,9 @@ const Home = () => {
         <AnalizadorSemantico />
         <CodigoIntermedio />
         <CodigoOptimizado />
-        <CodigoMaquina />
+        {/* <CodigoMaquina /> */}
         <CodigoFinal />
+        {/* <CodigoEjecutado /> */}
       </div>
     </div>
   );
