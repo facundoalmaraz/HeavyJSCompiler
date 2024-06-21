@@ -4,11 +4,22 @@ const CompilerContext = createContext();
 
 const CompilerProvider = ({ children }) => {
   const [codigoFuente, setCodigoFuente] = useState(`
-  DarkSymphony primerPrograma {
-  WhisperOfThoughts 'Este es un programa de ejemplo';
-  BattleCry 'Hola, mundo!';
-  }
-    `);
+    DarkSymphony primerPrograma {
+      WhisperOfThoughts 'Este es un programa de ejemplo';
+      BattleCry 'Hola, mundo!';
+      frost numero = 10;
+      frost numeroa = 20;
+      OdinWill numero < numeroa {
+        BattleCry 'El número es menor';
+      } HelheimFate {
+        BattleCry 'El número es mayor';
+      }
+  
+      RideWithTheGodOurSide (i = 0; i < 10; i++) {
+        BattleCry 'Hola, mundo!';
+      }
+    }
+  `);
   const [tokens, setTokens] = useState([]);
   const [nodos, setNodos] = useState([]);
   const [errores, setErrores] = useState([]);
@@ -16,68 +27,6 @@ const CompilerProvider = ({ children }) => {
   const [codigoOptimizado, setCodigoOptimizado] = useState("");
   const [codigoMaquina, setCodigoMaquina] = useState("");
   const [codigoFinal, setCodigoFinal] = useState("");
-
-
-//   const codigoFuente = `
-// DarkSymphony primerPrograma {
-
-// WhisperOfThoughts 'Este es un programa de ejemplo';
-// BattleCry 'Hola, mundo!';
-
-// frost numero = 10;
-
-// sword numero2 = 20;
-
-// OdinWill numero < numero2 {
-//   BattleCry 'El número es menor';
-// } HelheimFate {
-//   BattleCry 'El número es mayor';
-// }
-
-// RideWithTheGodOurSide (i = 0; i < 10; i++) {
-//   BattleCry 'Iteración ' + i;
-// }
-
-// EternalLoop (i > 20) {
-//   BattleCry 'Iteración ' + i;
-// }
-
-// WitchCastsSpell suma(a, b) {
-//   BattleCry a + b;
-// }
-
-// }
-// `;
-  // const codigoFuente = `
-  // DarkSymphony primerPrograma {
-
-  // WhisperOfThoughts 'Este es un programa de ejemplo';
-  // BattleCry 'Hola, mundo!';
-
-  // frost numero = 10;
-
-  // sword numero2 = 20;
-
-  // OdinWill numero < numero2 {
-  //   BattleCry 'El número es menor';
-  // } HelheimFate {
-  //   BattleCry 'El número es mayor';
-  // }
-
-  // RideWithTheGodOurSide (i = 0; i < 10; i++) {
-  //   BattleCry 'Iteración ' + i;
-  // }
-
-  // EternalLoop (i > 20) {
-  //   BattleCry 'Iteración ' + i;
-  // }
-
-  // WitchCastsSpell suma(a, b) {
-  //   BattleCry a + b;
-  // }
-
-  // }
-  // `;
 
   //paso 1: Analizador Lexico
   function tokenizar(codigoFuente) {
@@ -106,170 +55,188 @@ const CompilerProvider = ({ children }) => {
     const nodos = [];
     let i = 0;
 
+    function expect(type, value = null) {
+      if (
+        i < tokens.length &&
+        tokens[i].type === type &&
+        (value === null || tokens[i].value === value)
+      ) {
+        return tokens[i++];
+      } else {
+        throw new Error(
+          `Expected ${type} ${value ? value : ""}, but got ${
+            tokens[i] ? tokens[i].type + " " + tokens[i].value : "end of input"
+          }`
+        );
+      }
+    }
+
+    function parseExpression() {
+      let left = expect("identifier").value;
+      if (i < tokens.length && tokens[i].type === "symbol") {
+        const operator = tokens[i].value;
+        i++;
+        if (operator === "+" || operator === "-") {
+          if (
+            i < tokens.length &&
+            tokens[i].type === "symbol" &&
+            tokens[i].value === operator
+          ) {
+            i++;
+            return {
+              type: "UnaryExpression",
+              operator: operator + operator,
+              argument: left,
+            };
+          } else {
+            throw new Error(`Unexpected token: ${tokens[i].type}`);
+          }
+        } else {
+          const right =
+            tokens[i].type === "identifier" || tokens[i].type === "number"
+              ? expect(tokens[i].type).value
+              : null;
+          return { type: "BinaryExpression", operator, left, right };
+        }
+      } else {
+        return { type: "Identifier", name: left };
+      }
+    }
+
+    function parseBlock() {
+      const body = [];
+      expect("symbol", "{");
+      while (
+        i < tokens.length &&
+        !(tokens[i].type === "symbol" && tokens[i].value === "}")
+      ) {
+        const statement = parseStatement();
+        if (statement) body.push(statement);
+      }
+      expect("symbol", "}");
+      return body;
+    }
+
+    function parseStatement() {
+      if (tokens[i].type === "keyword") {
+        switch (tokens[i].value) {
+          case "WhisperOfThoughts":
+            return parseComment();
+          case "BattleCry":
+            return parseMessage();
+          case "frost":
+          case "sword":
+            return parseVariableDeclaration();
+          case "OdinWill":
+            return parseIfStatement();
+          case "RideWithTheGodOurSide":
+            return parseForLoop();
+          case "EternalLoop":
+            return parseWhileLoop();
+          case "WitchCastsSpell":
+            return parseFunctionDeclaration();
+          default:
+            throw new Error(`Unexpected keyword: ${tokens[i].value}`);
+        }
+      } else if (tokens[i].type === "symbol" && tokens[i].value === ";") {
+        i++;
+        return null; // ignore semicolons
+      } else {
+        throw new Error(`Unexpected token: ${tokens[i].type}`);
+      }
+    }
+
+    function parseComment() {
+      expect("keyword", "WhisperOfThoughts");
+      const value = expect("literal").value;
+      return { type: "Comment", value };
+    }
+
+    function parseMessage() {
+      expect("keyword", "BattleCry");
+      const argument = expect("literal").value;
+      return { type: "Message", argument };
+    }
+
+    function parseVariableDeclaration() {
+      const kind = expect("keyword").value;
+      const identifier = expect("identifier").value;
+      expect("symbol", "=");
+      const init = expect("number").value;
+      return {
+        type: "VariableDeclaration",
+        kind,
+        identifier: { type: "Identifier", value: identifier },
+        init: { type: "Literal", value: init },
+      };
+    }
+
+    function parseIfStatement() {
+      expect("keyword", "OdinWill");
+      const test = parseExpression();
+      const consequent = parseBlock();
+      let alternate = null;
+      if (
+        tokens[i] &&
+        tokens[i].type === "keyword" &&
+        tokens[i].value === "HelheimFate"
+      ) {
+        expect("keyword", "HelheimFate");
+        alternate = parseBlock();
+      }
+      return { type: "IfStatement", test, consequent, alternate };
+    }
+
+    function parseForLoop() {
+      expect("keyword", "RideWithTheGodOurSide");
+      expect("symbol", "(");
+      const init = parseExpression();
+      expect("symbol", ";");
+      const test = parseExpression();
+      expect("symbol", ";");
+      const update = parseExpression();
+      expect("symbol", ")");
+      const body = parseBlock();
+      return { type: "ForStatement", init, test, update, body };
+    }
+
+    function parseWhileLoop() {
+      expect("keyword", "EternalLoop");
+      expect("symbol", "(");
+      const test = parseExpression();
+      expect("symbol", ")");
+      const body = parseBlock();
+      return { type: "WhileStatement", test, body };
+    }
+
+    function parseFunctionDeclaration() {
+      expect("keyword", "WitchCastsSpell");
+      const name = expect("identifier").value;
+      expect("symbol", "(");
+      const params = [];
+      while (tokens[i].type !== "symbol" || tokens[i].value !== ")") {
+        params.push(expect("identifier").value);
+        if (tokens[i].type === "symbol" && tokens[i].value === ",") {
+          expect("symbol", ",");
+        }
+      }
+      expect("symbol", ")");
+      const body = parseBlock();
+      return { type: "FunctionDeclaration", name, params, body };
+    }
+
     while (i < tokens.length) {
       if (tokens[i].type === "keyword" && tokens[i].value === "DarkSymphony") {
-        const nodoPrograma = {
-          type: "Program",
-          name: tokens[++i].value,
-          body: [],
-        };
         i++;
-
-        while (
-          i < tokens.length &&
-          !(tokens[i].type === "symbol" && tokens[i].value === "}")
-        ) {
-          if (
-            tokens[i].type === "keyword" &&
-            tokens[i].value === "WhisperOfThoughts"
-          ) {
-            i++;
-            const nodoComentario = { type: "Comment", value: tokens[i].value };
-            nodoPrograma.body.push(nodoComentario);
-          } else if (
-            tokens[i].type === "keyword" &&
-            tokens[i].value === "BattleCry"
-          ) {
-            i++;
-            const nodoMensaje = { type: "Message", argument: tokens[i] };
-            nodoPrograma.body.push(nodoMensaje);
-          } else if (
-            tokens[i].type === "keyword" &&
-            (tokens[i].value === "frost" || tokens[i].value === "sword")
-          ) {
-            const kind = tokens[i].value;
-            i++;
-            const identifier = tokens[i].value;
-            let init = null;
-            i++;
-            if (tokens[i].type === "symbol" && tokens[i].value === "=") {
-              i++;
-              init = tokens[i];
-              i++;
-            }
-            const nodoVariable = {
-              type: "VariableDeclaration",
-              kind,
-              identifier: { type: "Identifier", value: identifier },
-              init,
-            };
-            nodoPrograma.body.push(nodoVariable);
-          } else if (
-            tokens[i].type === "keyword" &&
-            tokens[i].value === "OdinWill"
-          ) {
-            i++;
-            const test = tokens[i];
-            i++;
-            const consequent = [];
-            while (
-              i < tokens.length &&
-              !(
-                tokens[i].type === "keyword" &&
-                tokens[i].value === "HelheimFate"
-              )
-            ) {
-              consequent.push(tokens[i]);
-              i++;
-            }
-            i++;
-            const alternate = [];
-            while (
-              i < tokens.length &&
-              !(tokens[i].type === "symbol" && tokens[i].value === "}")
-            ) {
-              alternate.push(tokens[i]);
-              i++;
-            }
-            const nodoIf = { type: "IfStatement", test, consequent, alternate };
-            nodoPrograma.body.push(nodoIf);
-          } else if (
-            tokens[i].type === "keyword" &&
-            tokens[i].value === "RideWithTheGodOurSide"
-          ) {
-            i++;
-            const params = [];
-            while (tokens[i].type !== "symbol" || tokens[i].value !== ")") {
-              params.push(tokens[i]);
-              i++;
-            }
-            i++;
-            const body = [];
-            while (
-              i < tokens.length &&
-              !(tokens[i].type === "symbol" && tokens[i].value === "}")
-            ) {
-              body.push(tokens[i]);
-              i++;
-            }
-            const nodoBucle = {
-              type: "LoopStatement",
-              kind: "RideWithTheGodOurSide",
-              params,
-              body,
-            };
-            nodoPrograma.body.push(nodoBucle);
-          } else if (
-            tokens[i].type === "keyword" &&
-            tokens[i].value === "EternalLoop"
-          ) {
-            i++;
-            const params = [];
-            while (tokens[i].type !== "symbol" || tokens[i].value !== ")") {
-              params.push(tokens[i]);
-              i++;
-            }
-            i++;
-            const body = [];
-            while (
-              i < tokens.length &&
-              !(tokens[i].type === "symbol" && tokens[i].value === "}")
-            ) {
-              body.push(tokens[i]);
-              i++;
-            }
-            const nodoBucle = {
-              type: "LoopStatement",
-              kind: "EternalLoop",
-              params,
-              body,
-            };
-            nodoPrograma.body.push(nodoBucle);
-          } else if (
-            tokens[i].type === "keyword" &&
-            tokens[i].value === "WitchCastsSpell"
-          ) {
-            i++;
-            const identifier = tokens[i].value;
-            i++;
-            const params = [];
-            while (tokens[i].type !== "symbol" || tokens[i].value !== ")") {
-              params.push(tokens[i]);
-              i++;
-            }
-            i++;
-            const body = [];
-            while (
-              i < tokens.length &&
-              !(tokens[i].type === "symbol" && tokens[i].value === "}")
-            ) {
-              body.push(tokens[i]);
-              i++;
-            }
-            const nodoFuncion = {
-              type: "FunctionDeclaration",
-              name: identifier,
-              params,
-              body,
-            };
-            nodoPrograma.body.push(nodoFuncion);
-          }
-          i++;
-        }
+        const name = expect("identifier").value;
+        const body = parseBlock();
+        const nodoPrograma = { type: "Program", name, body };
         nodos.push(nodoPrograma);
+      } else {
+        i++;
       }
-      i++;
     }
+
     return nodos;
   }
 
@@ -314,8 +281,10 @@ const CompilerProvider = ({ children }) => {
         analizarNodo(nodo.test);
         nodo.consequent.forEach(analizarNodo);
         nodo.alternate.forEach(analizarNodo);
-      } else if (nodo.type === "LoopStatement") {
-        nodo.params.forEach(analizarNodo);
+      } else if (
+        nodo.type === "ForStatement" ||
+        nodo.type === "WhileStatement"
+      ) {
         nodo.body.forEach(analizarNodo);
       } else if (nodo.type === "FunctionDeclaration") {
         declararFuncion(nodo.name);
@@ -324,7 +293,7 @@ const CompilerProvider = ({ children }) => {
       } else if (nodo.type === "Identifier") {
         comprobarVariable(nodo.value);
       } else if (nodo.type === "Message") {
-        if (nodo.argument.type === "identifier") {
+        if (nodo.argument.type === "Identifier") {
           comprobarVariable(nodo.argument.value);
         }
       }
@@ -344,9 +313,9 @@ const CompilerProvider = ({ children }) => {
         nodo.body.forEach(generarInstruccion);
         instrucciones.push("fin programa");
       } else if (nodo.type === "Comment") {
-        instrucciones.push(`comentario ${nodo.value}`);
+        instrucciones.push(`comentario '${nodo.value}'`);
       } else if (nodo.type === "Message") {
-        instrucciones.push(`mensaje '${nodo.argument.value}'`);
+        instrucciones.push(`mensaje '${nodo.argument}'`);
       } else if (nodo.type === "VariableDeclaration") {
         if (nodo.init) {
           instrucciones.push(
@@ -356,23 +325,32 @@ const CompilerProvider = ({ children }) => {
           instrucciones.push(`variable ${nodo.kind} ${nodo.identifier.value}`);
         }
       } else if (nodo.type === "IfStatement") {
-        instrucciones.push(`si ${nodo.test.value}`);
+        instrucciones.push(
+          `si ${nodo.test.left} ${nodo.test.operator} ${nodo.test.right}`
+        );
         nodo.consequent.forEach(generarInstruccion);
-        if (nodo.alternate.length > 0) {
+        if (nodo.alternate && nodo.alternate.length > 0) {
           instrucciones.push("sino");
           nodo.alternate.forEach(generarInstruccion);
         }
         instrucciones.push("fin si");
-      } else if (nodo.type === "LoopStatement") {
+      } else if (nodo.type === "ForStatement") {
+        const init = `${nodo.init.left} ${nodo.init.operator} ${nodo.init.right}`;
+        const test = `${nodo.test.left} ${nodo.test.operator} ${nodo.test.right}`;
+        const update = `${nodo.update.left} ${nodo.update.operator} ${nodo.update.right}`;
         instrucciones.push(
-          `bucle ${nodo.kind} (${nodo.params.map((p) => p.value).join(" ")})`
+          `bucle RideWithTheGodOurSide (${init}; ${test}; ${update})`
         );
         nodo.body.forEach(generarInstruccion);
         instrucciones.push("fin bucle");
+      } else if (nodo.type === "WhileStatement") {
+        const test = `${nodo.test.left} ${nodo.test.operator} ${nodo.test.right}`;
+        instrucciones.push(`bucle EternalLoop (${test})`);
+        nodo.body.forEach(generarInstruccion);
+        instrucciones.push("fin bucle");
       } else if (nodo.type === "FunctionDeclaration") {
-        instrucciones.push(
-          `funcion ${nodo.name}(${nodo.params.map((p) => p.value).join(", ")})`
-        );
+        const params = nodo.params.join(", ");
+        instrucciones.push(`funcion ${nodo.name}(${params})`);
         nodo.body.forEach(generarInstruccion);
         instrucciones.push("fin funcion");
       }
@@ -545,31 +523,50 @@ const CompilerProvider = ({ children }) => {
   }
 
   useEffect(() => {
-    setTokens(tokenizar(codigoFuente));
+    const newTokens = tokenizar(codigoFuente);
+    setTokens(newTokens);
   }, [codigoFuente]);
 
   useEffect(() => {
-    setNodos(analizar(tokens));
+    if (tokens.length > 0) {
+      const newNodos = analizar(tokens);
+      setNodos(newNodos);
+    }
   }, [tokens]);
 
   useEffect(() => {
-    setErrores(Analisissemantico(nodos));
+    if (nodos.length > 0) {
+      const newErrores = Analisissemantico(nodos);
+      setErrores(newErrores);
+    }
   }, [nodos]);
 
   useEffect(() => {
-    setCodigoIntermedio(generarCodigoIntermedio(nodos));
+    if (nodos.length > 0) {
+      const newCodigoIntermedio = generarCodigoIntermedio(nodos);
+      setCodigoIntermedio(newCodigoIntermedio);
+    }
   }, [nodos]);
 
   useEffect(() => {
-    setCodigoOptimizado(optimizarCodigoIntermedio(codigoIntermedio));
+    if (codigoIntermedio) {
+      const newCodigoOptimizado = optimizarCodigoIntermedio(codigoIntermedio);
+      setCodigoOptimizado(newCodigoOptimizado);
+    }
   }, [codigoIntermedio]);
 
   useEffect(() => {
-    setCodigoMaquina(generarCodigoMaquina(codigoIntermedio));
-  }, [codigoIntermedio]);
+    if (codigoOptimizado) {
+      const newCodigoMaquina = generarCodigoMaquina(codigoOptimizado);
+      setCodigoMaquina(newCodigoMaquina);
+    }
+  }, [codigoOptimizado]);
 
   useEffect(() => {
-    setCodigoFinal(generacionCodigoFinal(codigoMaquina));
+    if (codigoMaquina) {
+      const newCodigoFinal = generacionCodigoFinal(codigoMaquina);
+      setCodigoFinal(newCodigoFinal);
+    }
   }, [codigoMaquina]);
 
   return (
